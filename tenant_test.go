@@ -40,7 +40,14 @@ func getClient(uri string) (*http.Client, *http.Request) {
 
     client := &http.Client{Transport: tr}
 
-    url := fmt.Sprintf("https://%s:%s/%s", os.Getenv("DB_HOST"), os.Getenv("DB_PORT"), uri)
+    schema := "http"
+
+    if os.Getenv("DB_SCHEMA") != "" {
+        schema = os.Getenv("DB_SCHEMA")
+    }
+
+    url := fmt.Sprintf("%s://%s:%s/%s", schema, os.Getenv("DB_HOST"), os.Getenv("DB_PORT"), uri)
+    fmt.Println("DB Endpoint ", url)
     req, _ := http.NewRequest("POST", url, nil)
 
     req.Header.Add("NS", os.Getenv("DB_NAMESPACE"))
