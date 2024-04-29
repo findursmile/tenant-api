@@ -15,8 +15,11 @@ import (
 var DB *surrealdb.DB
 
 func main() {
+    loadEnv()
+
 	r := gin.Default()
     ApiRouter = r.Group("/api")
+    ApiRouter.Use(Authendicate)
 
     r.GET("/ping", func(c *gin.Context) {
 		c.JSON(200, gin.H{
@@ -24,41 +27,39 @@ func main() {
 		})
 	})
 
-    buf, err := os.ReadFile(".env")
-
-    if err != nil {
-        panic(err)
-    }
-
-    env, err := envparse.Parse(bytes.NewReader(buf))
-
-    if err != nil {
-        panic(err)
-    }
-
     websocket.DefaultDialer.TLSClientConfig = &tls.Config{
         InsecureSkipVerify: true,
     }
 
-    endpoint := fmt.Sprint("wss://", env["DB_HOST"], ":", env["DB_PORT"], "/rpc")
+    endpoint := fmt.Sprint("wss://", os.Getenv( "DB_HOST" ), ":", os.Getenv( "DB_PORT" ), "/rpc")
+    var err error
     DB, err = surrealdb.New(endpoint)
 
     if err != nil {
         panic(err)
     }
 
-    _, err = DB.Signin(map[string]interface{}{
-        "user": env["DB_USER"],
-        "pass": env["DB_PASS"],
-    })
+    DB.Use(os.Getenv( "DB_NAMESPACE" ), os.Getenv( "DB_DATABASE" ))
 
-    if err != nil {
-        panic(err)
-    }
-
-    DB.Use(env["DB_NAMESPACE"], env["DB_DATABASE"])
-
-    RegisterRoutes()
+    DefineRoutes(r)
 
 	r.Run() // listen and serve on 0.0.0.0:8080
+}
+
+func loadEnv() {
+    buf, err := os.ReadFile(".env")
+
+    if err != nil {
+        return
+    }
+
+    env, err := envparse.Parse(bytes.NewReader(buf))
+
+    if err != nil {
+        return
+    }
+
+    for key, value := range env {
+        os.Setenv(key, value)
+    }
 }
