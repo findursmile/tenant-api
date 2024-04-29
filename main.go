@@ -34,6 +34,7 @@ func InitDB() {
         schema = "wss"
     }
     endpoint := fmt.Sprint(schema, "://", os.Getenv( "DB_HOST" ), ":", os.Getenv( "DB_PORT" ), "/rpc")
+    fmt.Println("WS endpoint: ", endpoint)
     DB, err = surrealdb.New(endpoint)
 
     if err != nil {
