@@ -41,7 +41,7 @@ func main() {
     }
 
     endpoint := fmt.Sprint("wss://", env["DB_HOST"], ":", env["DB_PORT"], "/rpc")
-    DB, err := surrealdb.New(endpoint)
+    DB, err = surrealdb.New(endpoint)
 
     if err != nil {
         panic(err)
@@ -55,6 +55,8 @@ func main() {
     if err != nil {
         panic(err)
     }
+
+    DB.Use(env["DB_NAMESPACE"], env["DB_DATABASE"])
 
     RegisterRoutes()
 

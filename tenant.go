@@ -1,11 +1,9 @@
 package main
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/surrealdb/surrealdb.go"
 )
 
 type TenantPayload struct {
@@ -14,6 +12,7 @@ type TenantPayload struct {
     Country_code string `json:"country_code"`
     Email string `json:"email"`
     Password string `json:"password"`
+    Status string `json:"status"`
 }
 
 type Tenant struct {
@@ -30,33 +29,22 @@ type Tenant struct {
 
 func CreateTenant(c *gin.Context) {
     var payload TenantPayload;
+
     err := c.ShouldBindJSON(&payload)
-    if err != nil {
-        panic(err)
-    }
-    fmt.Print(payload)
-    data, err := DB.Create("tenant", map[string]interface{} {
-        "name": payload.Name,
-        "mobile": payload.Mobile,
-        "email": payload.Email,
-        "password": payload.Password,
-        "country_code": payload.Country_code,
-    })
 
     if err != nil {
-        panic(err)
+        c.JSON(412, gin.H{"message": "Unable to parse request", "exception": err.Error()})
+        return
     }
 
-    tenant := make([]Tenant, 1)
+    payload.Status = "active"
 
-    err = surrealdb.Unmarshal(data, &tenant)
+    _, err = DB.Create("tenant", payload)
 
     if err != nil {
-        panic(err)
+        c.JSON(412, gin.H{"message": "Unable to create Tenant", "exception": err.Error()})
+        return
     }
-
-
-    fmt.Printf("Tenant :%s", tenant[0].Id)
 
     c.JSON(200, gin.H{"message": "Tenant created successfully"})
 }
