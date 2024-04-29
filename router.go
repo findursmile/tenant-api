@@ -52,20 +52,13 @@ func GetEvents(c *gin.Context) {
         panic(err)
     }
 
-    image := Image{
-        ImageUri: "TEst",
-        Status: "pending",
-    }
-
-    _, err = DB.Create("image", image)
-
     if err != nil {
         panic(err)
     }
 
-    data, err := DB.Select("image")
+    data, err := DB.Select("event")
 
-    var userEvents []Image;
+    var userEvents []map[string]interface{};
 
     surrealdb.Unmarshal(data, &userEvents)
 
