@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -29,48 +28,6 @@ func TestMain(M *testing.M) {
 
     RemoveSchema()
     os.Exit(exitCode)
-}
-
-func getClient(uri string) (*http.Client, *http.Request) {
-    tr := &http.Transport{
-        TLSClientConfig: &tls.Config{
-            InsecureSkipVerify: true,
-        },
-    }
-
-    client := &http.Client{Transport: tr}
-
-    schema := "http"
-
-    if os.Getenv("DB_SECURED") == "true" {
-        schema = "https"
-    }
-
-    url := fmt.Sprintf("%s://%s:%s/%s", schema, os.Getenv("DB_HOST"), os.Getenv("DB_PORT"), uri)
-    fmt.Println("DB Endpoint ", url)
-    req, _ := http.NewRequest("POST", url, nil)
-
-    req.Header.Add("NS", os.Getenv("DB_NAMESPACE"))
-    req.Header.Add("DB", os.Getenv("DB_DATABASE"))
-    req.Header.Add("Accept", "application/json")
-    req.SetBasicAuth(os.Getenv("DB_USER"), os.Getenv("DB_PASS"))
-
-    return client, req
-}
-
-func ImportSchema() {
-    reader, _ := os.Open("schema.surql")
-
-    client, req := getClient("import")
-
-    req.Body = reader
-
-    _, err := client.Do(req)
-
-    if err != nil {
-        fmt.Println("Unable to import schema")
-        os.Exit(1)
-    }
 }
 
 func RemoveSchema() {

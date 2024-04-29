@@ -35,7 +35,7 @@ DEFINE SCOPE tenant SESSION 1d
 # Table event
 DEFINE TABLE event SCHEMALESS
     PERMISSIONS
-        FOR create, update, delete, select NONE;
+        FOR create, update, delete, select where tenant = $auth.id;
 
 DEFINE FIELD name ON TABLE event TYPE string;
 DEFINE FIELD cover_photo ON TABLE event TYPE string;
@@ -51,6 +51,11 @@ DEFINE FIELD updated ON event VALUE time::now() TYPE datetime;
 
 # RELATION owner_of  - Tenant owner_of event
 DEFINE TABLE owner_of TYPE RELATION FROM tenant TO event;
+
+DEFINE EVENT owner ON TABLE event WHEN $before == NONE THEN {
+    LET $tenant = (select * from tenant where id = $after.tenant);
+    RELATE $tenant->owner_of->$after;
+}
 
 
 # Table image

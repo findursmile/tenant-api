@@ -2,7 +2,6 @@ package main
 
 import (
 	"strings"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/surrealdb/surrealdb.go"
@@ -41,24 +40,6 @@ func Authendicate(c *gin.Context) {
 }
 
 func GetEvents(c *gin.Context) {
-    event := map[string]interface{} {
-        "cover_photo": "test",
-        "event_date": time.Now(),
-        "event_end_at": time.Now().Add(time.Hour),
-        "name": "New event",
-        "status": "draft",
-        "title": "My new event",
-    }
-
-    _, err := DB.Create("event", event)
-    if err != nil {
-        panic(err)
-    }
-
-    if err != nil {
-        panic(err)
-    }
-
     data, err := DB.Select("event")
 
     var userEvents []map[string]interface{};
