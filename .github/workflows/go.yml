@@ -22,7 +22,7 @@ jobs:
         go-version: '1.20'
         
     - name: Start SurrealDB
-      uses: welpie21/surrealdb-actions@1.0.0
+      uses: welpie21/surrealdb-actions@v1.0.0
       with:
         VERSION: latest
         PORT: 8000
