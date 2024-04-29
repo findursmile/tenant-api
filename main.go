@@ -19,20 +19,13 @@ func main() {
 
 	r := gin.Default()
     ApiRouter = r.Group("/api")
-    ApiRouter.Use(Authendicate)
-
-    r.GET("/ping", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"message": "pong",
-		})
-	})
 
     websocket.DefaultDialer.TLSClientConfig = &tls.Config{
         InsecureSkipVerify: true,
     }
 
-    endpoint := fmt.Sprint("wss://", os.Getenv( "DB_HOST" ), ":", os.Getenv( "DB_PORT" ), "/rpc")
     var err error
+    endpoint := fmt.Sprint("wss://", os.Getenv( "DB_HOST" ), ":", os.Getenv( "DB_PORT" ), "/rpc")
     DB, err = surrealdb.New(endpoint)
 
     if err != nil {
