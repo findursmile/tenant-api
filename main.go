@@ -55,13 +55,11 @@ func loadEnv() {
     env, err := envparse.Parse(bytes.NewReader(buf))
 
     if err != nil {
-        fmt.Println(string(buf[:]))
         fmt.Println(err.Error())
         return
     }
 
     for key, value := range env {
-        fmt.Println("Setting ENV ", key, ": ", value)
         os.Setenv(key, value)
     }
 }
