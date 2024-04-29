@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -41,7 +42,9 @@ func CreateTenant(c *gin.Context) {
     }
 
     payload.Status = "active"
-    payload.Status = "active"
+    payload.SC = "tenant"
+    payload.NS = os.Getenv("DB_NAMESPACE")
+    payload.DB = os.Getenv("DB_DATABASE")
 
     _, err = DB.Signup(payload)
 
