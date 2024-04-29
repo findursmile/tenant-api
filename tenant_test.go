@@ -42,8 +42,8 @@ func getClient(uri string) (*http.Client, *http.Request) {
 
     schema := "http"
 
-    if os.Getenv("DB_SCHEMA") != "" {
-        schema = os.Getenv("DB_SCHEMA")
+    if os.Getenv("DB_SECURED") == "true" {
+        schema = "https"
     }
 
     url := fmt.Sprintf("%s://%s:%s/%s", schema, os.Getenv("DB_HOST"), os.Getenv("DB_PORT"), uri)

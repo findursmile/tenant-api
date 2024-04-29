@@ -29,7 +29,11 @@ func InitDB() {
     }
 
     var err error
-    endpoint := fmt.Sprint("wss://", os.Getenv( "DB_HOST" ), ":", os.Getenv( "DB_PORT" ), "/rpc")
+    schema := "ws"
+    if os.Getenv("DB_SECURED") == "true" {
+        schema = "wss"
+    }
+    endpoint := fmt.Sprint(schema, "://", os.Getenv( "DB_HOST" ), ":", os.Getenv( "DB_PORT" ), "/rpc")
     DB, err = surrealdb.New(endpoint)
 
     if err != nil {
