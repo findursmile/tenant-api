@@ -1,10 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"crypto/tls"
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/gorilla/websocket"
 	"github.com/surrealdb/surrealdb.go"
@@ -38,10 +40,19 @@ func ImportSchema() {
 
     req.Body = reader
 
-    _, err := client.Do(req)
+    res, err := client.Do(req)
 
     if err != nil {
         fmt.Println("Unable to import schema")
+        os.Exit(1)
+    }
+
+    buf := new(bytes.Buffer)
+    buf.ReadFrom(res.Body)
+
+    response := buf.String()
+    if strings.HasPrefix(response, "[{\"result\":") != true {
+        fmt.Println(response)
         os.Exit(1)
     }
 }

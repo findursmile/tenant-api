@@ -78,6 +78,7 @@ func TestSuccessfulSingup(t *testing.T) {
     json.Unmarshal([]byte(w.Body.String()), &response)
 
     assert.Equal(t, 200, w.Code)
+    assert.Equal(t, "", response["exception"])
     assert.Equal(t, "Tenant created successfully", response["message"])
 }
 

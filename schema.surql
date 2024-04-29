@@ -55,7 +55,7 @@ DEFINE TABLE owner_of TYPE RELATION FROM tenant TO event;
 DEFINE EVENT owner ON TABLE event WHEN $before == NONE THEN {
     LET $tenant = (select * from tenant where id = $after.tenant);
     RELATE $tenant->owner_of->$after;
-}
+};
 
 
 # Table image
