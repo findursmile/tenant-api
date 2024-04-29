@@ -55,6 +55,7 @@ func loadEnv() {
     env, err := envparse.Parse(bytes.NewReader(buf))
 
     if err != nil {
+        fmt.Println(string(buf[:]))
         fmt.Println(err.Error())
         return
     }
