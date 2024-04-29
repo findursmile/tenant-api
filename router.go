@@ -1,20 +1,22 @@
 package main
 
 import (
-	"os"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/surrealdb/surrealdb.go"
 )
 
 var ApiRouter *gin.RouterGroup;
 
 func DefineRoutes(router *gin.Engine) {
-    router.POST("api/signin", login)
-    router.POST("api/signup", CreateTenant)
+    router.POST("api/signin", Signin)
+    router.POST("api/signup", Signup)
 
     ApiRouter = router.Group("api")
     ApiRouter.Use(Authendicate)
+    ApiRouter.GET("events", GetEvents)
 }
 
 func Authendicate(c *gin.Context) {
@@ -30,34 +32,46 @@ func Authendicate(c *gin.Context) {
     c.Next()
 }
 
-type LoginPayload struct {
-    Email string `json:"email"`
-    Password string `json:"password"`
-    NS string `json:"NS"`
-    DB string `json:"DB"`
-    SC string `json:"SC"`
+type Image struct {
+    ImageUri string `json:"image_uri"`
+    Status string `json:"status"`
 }
 
-func login(c *gin.Context) {
-    var loginPayload LoginPayload;
-
-    err := c.ShouldBindJSON(&loginPayload)
-
-    if err != nil {
-        c.JSON(412, gin.H{"message": "Unable to parse request", "exception": err.Error()})
-        return
+func GetEvents(c *gin.Context) {
+    event := map[string]interface{} {
+        "cover_photo": "test",
+        "event_date": time.Now(),
+        "event_end_at": time.Now().Add(time.Hour),
+        "name": "New event",
+        "status": "draft",
+        "title": "My new event",
     }
 
-    loginPayload.NS = os.Getenv("DB_NAMESPACE")
-    loginPayload.DB = os.Getenv("DB_DATABASE")
-    loginPayload.SC = "tenant"
-
-    token, err := DB.Signin(loginPayload)
-
+    _, err := DB.Create("event", event)
     if err != nil {
-        c.JSON(412, gin.H{"message": "Unable to login", "exception": err.Error()})
-        return
+        panic(err)
     }
 
-    c.JSON(200, gin.H{"message": "Logged in successfully", "token": token})
+    image := Image{
+        ImageUri: "TEst",
+        Status: "pending",
+    }
+
+    _, err = DB.Create("image", image)
+
+    if err != nil {
+        panic(err)
+    }
+
+    data, err := DB.Select("image")
+
+    var userEvents []Image;
+
+    surrealdb.Unmarshal(data, &userEvents)
+
+    if err != nil {
+        c.AbortWithStatusJSON(412, gin.H{"message": "Unable to fetch events"})
+    }
+
+    c.JSON(200, gin.H{"events": userEvents})
 }

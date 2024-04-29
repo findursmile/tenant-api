@@ -7,13 +7,21 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type TenantSingupPayload struct {
+type SingupPayload struct {
     Name string `json:"name"`
     Mobile string `json:"mobile"`
     Country_code string `json:"country_code"`
     Email string `json:"email"`
     Password string `json:"password"`
     Status string `json:"status"`
+    NS string `json:"NS"`
+    DB string `json:"DB"`
+    SC string `json:"SC"`
+}
+
+type SigninPayload struct {
+    Email string `json:"email"`
+    Password string `json:"password"`
     NS string `json:"NS"`
     DB string `json:"DB"`
     SC string `json:"SC"`
@@ -31,8 +39,8 @@ type Tenant struct {
     Updated time.Time `json:"updated"`
 }
 
-func CreateTenant(c *gin.Context) {
-    var payload TenantSingupPayload;
+func Signup(c *gin.Context) {
+    var payload SingupPayload;
 
     err := c.ShouldBindJSON(&payload)
 
@@ -54,4 +62,28 @@ func CreateTenant(c *gin.Context) {
     }
 
     c.JSON(200, gin.H{"message": "Tenant created successfully"})
+}
+
+func Signin(c *gin.Context) {
+    var signinPayload SigninPayload;
+
+    err := c.ShouldBindJSON(&signinPayload)
+
+    if err != nil {
+        c.JSON(412, gin.H{"message": "Unable to parse request", "exception": err.Error()})
+        return
+    }
+
+    signinPayload.NS = os.Getenv("DB_NAMESPACE")
+    signinPayload.DB = os.Getenv("DB_DATABASE")
+    signinPayload.SC = "tenant"
+
+    token, err := DB.Signin(signinPayload)
+
+    if err != nil {
+        c.JSON(412, gin.H{"message": "Unable to login", "exception": err.Error()})
+        return
+    }
+
+    c.JSON(200, gin.H{"message": "Logged in successfully", "token": token})
 }
