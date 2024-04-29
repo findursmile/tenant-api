@@ -10,6 +10,14 @@ import (
 
 var ApiRouter *gin.RouterGroup;
 
+func SetupRoutes() *gin.Engine {
+    r := gin.Default()
+
+    DefineRoutes(r)
+
+    return r
+}
+
 func DefineRoutes(router *gin.Engine) {
     router.POST("api/signin", Signin)
     router.POST("api/signup", Signup)
@@ -30,11 +38,6 @@ func Authendicate(c *gin.Context) {
     }
 
     c.Next()
-}
-
-type Image struct {
-    ImageUri string `json:"image_uri"`
-    Status string `json:"status"`
 }
 
 func GetEvents(c *gin.Context) {

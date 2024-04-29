@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"github.com/hashicorp/go-envparse"
 	"github.com/surrealdb/surrealdb.go"
@@ -17,8 +16,7 @@ var DB *surrealdb.DB
 func main() {
     loadEnv()
 
-	r := gin.Default()
-    ApiRouter = r.Group("/api")
+	r := SetupRoutes()
 
     websocket.DefaultDialer.TLSClientConfig = &tls.Config{
         InsecureSkipVerify: true,
@@ -34,7 +32,6 @@ func main() {
 
     DB.Use(os.Getenv( "DB_NAMESPACE" ), os.Getenv( "DB_DATABASE" ))
 
-    DefineRoutes(r)
 
 	r.Run() // listen and serve on 0.0.0.0:8080
 }
