@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type SingupPayload struct {
+type SignupPayload struct {
     Name string `json:"name"`
     Mobile string `json:"mobile"`
     Country_code string `json:"country_code"`
@@ -40,7 +40,7 @@ type Tenant struct {
 }
 
 func Signup(c *gin.Context) {
-    var payload SingupPayload;
+    var payload SignupPayload;
 
     err := c.ShouldBindJSON(&payload)
 

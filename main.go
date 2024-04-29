@@ -18,6 +18,12 @@ func main() {
 
 	r := SetupRoutes()
 
+    InitDB()
+
+	r.Run() // listen and serve on 0.0.0.0:8080
+}
+
+func InitDB() {
     websocket.DefaultDialer.TLSClientConfig = &tls.Config{
         InsecureSkipVerify: true,
     }
@@ -31,9 +37,6 @@ func main() {
     }
 
     DB.Use(os.Getenv( "DB_NAMESPACE" ), os.Getenv( "DB_DATABASE" ))
-
-
-	r.Run() // listen and serve on 0.0.0.0:8080
 }
 
 func loadEnv() {
