@@ -1,5 +1,7 @@
 # Table tenant
-DEFINE TABLE tenant SCHEMALESS;
+DEFINE TABLE tenant SCHEMALESS
+    PERMISSIONS
+        FOR create, update, delete, select where id = $auth.id;
 
 DEFINE FIELD name ON TABLE tenant TYPE string;
 DEFINE FIELD email ON TABLE tenant TYPE string
@@ -59,7 +61,10 @@ DEFINE EVENT owner ON TABLE event WHEN $before == NONE THEN {
 
 
 # Table image
-DEFINE TABLE image SCHEMALESS;
+DEFINE TABLE image SCHEMALESS
+    PERMISSIONS
+        FOR create, update, delete, select where event.tenant = $auth.id;
+
 DEFINE FIELD image_uri ON TABLE image TYPE string;
 DEFINE FIELD status ON TABLE image TYPE string;
 

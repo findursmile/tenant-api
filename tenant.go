@@ -5,7 +5,10 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/surrealdb/surrealdb.go"
 )
+
+var AuthTenant *Tenant
 
 type SignupPayload struct {
     Name string `json:"name"`
@@ -86,4 +89,28 @@ func Signin(c *gin.Context) {
     }
 
     c.JSON(200, gin.H{"message": "Logged in successfully", "token": token})
+}
+
+func GetTenant() (*Tenant) {
+    if AuthTenant != nil {
+        return AuthTenant
+    }
+
+    data, err := DB.Select("tenant")
+
+    if err != nil {
+        panic(err)
+    }
+
+    tenants := make([]Tenant, 1)
+
+    err = surrealdb.Unmarshal(data, &tenants)
+
+    if err != nil {
+        panic(err)
+    }
+
+    AuthTenant = &tenants[0]
+
+    return AuthTenant
 }

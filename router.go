@@ -4,7 +4,6 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/surrealdb/surrealdb.go"
 )
 
 var ApiRouter *gin.RouterGroup;
@@ -23,7 +22,8 @@ func DefineRoutes(router *gin.Engine) {
 
     ApiRouter = router.Group("api")
     ApiRouter.Use(Authendicate)
-    ApiRouter.GET("events", GetEvents)
+
+    RegisterEventRoutes()
 }
 
 func Authendicate(c *gin.Context) {
@@ -36,19 +36,7 @@ func Authendicate(c *gin.Context) {
         c.AbortWithStatusJSON(401, gin.H{"message": "Unauthendicated"})
     }
 
+    GetTenant()
+
     c.Next()
-}
-
-func GetEvents(c *gin.Context) {
-    data, err := DB.Select("event")
-
-    var userEvents []map[string]interface{};
-
-    surrealdb.Unmarshal(data, &userEvents)
-
-    if err != nil {
-        c.AbortWithStatusJSON(412, gin.H{"message": "Unable to fetch events"})
-    }
-
-    c.JSON(200, gin.H{"events": userEvents})
 }
