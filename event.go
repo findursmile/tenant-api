@@ -12,6 +12,7 @@ import (
 func RegisterEventRoutes() {
     ApiRouter.GET("events", GetEvents)
     ApiRouter.POST("events", CreateEvent)
+    ApiRouter.POST("events/:id", UpdateEvent)
 }
 
 type JsonDate time.Time
@@ -38,6 +39,7 @@ func (j JsonDate) Format(s string) string {
 }
 
 type Event struct {
+    Id string `json:"id"`
     Name string `json:"name"`
     CoverPhoto string `json:"cover_photo"`
     Title string `json:"title"`
@@ -51,10 +53,11 @@ type Event struct {
 }
 
 type CreateEventPayload struct {
-    Name string `json:"name"`
-    Title string `json:"title"`
-    EventDate *JsonDate `json:"event_date"`
-    EventEndAt *JsonDate `json:"event_end_at"`
+    Name string `json:"name" binding: "required"`
+    Title string `json:"title" binding: "required"`
+    CoverPhoto string `json:"cover_photo"`
+    EventDate *JsonDate `json:"event_date" binding: "required"`
+    EventEndAt *JsonDate `json:"event_end_at" binding: "required"`
     Tenant string `json:"tenant"`
     Status string `json:"status"`
 }
@@ -76,15 +79,25 @@ func GetEvents(c *gin.Context) {
 func CreateEvent(c *gin.Context) {
     var payload CreateEventPayload;
 
-    err := c.ShouldBindJSON(&payload)
-
-    if err != nil {
+    if err := c.ShouldBindJSON(&payload); err != nil {
         c.JSON(412, gin.H{"message": "Unable to parse request", "exception": err.Error()})
         return
     }
 
     payload.Status = "pending"
-    payload.Tenant = GetTenant().Id
+
+    authUser, exists := c.Get("user")
+    if exists == false {
+        c.JSON(412, gin.H{"message": "Unable to get the user"})
+        return
+    }
+
+    tenant, ok := authUser.(*Tenant)
+    if ok == false {
+        c.JSON(412, gin.H{"message": "Unable cast the user"})
+        return
+    }
+    payload.Tenant = tenant.Id
 
     data, err := DB.Create("event", &payload)
 
@@ -102,5 +115,49 @@ func CreateEvent(c *gin.Context) {
         return
     }
 
-    c.JSON(200, gin.H{"message": "Event was created successfully", "event": events[0].Name})
+    c.JSON(200, gin.H{"message": "Event was created successfully", "event": events[0].Id})
+}
+
+func UpdateEvent(c *gin.Context) {
+    var payload CreateEventPayload;
+
+    if err := c.ShouldBindJSON(&payload); err != nil {
+        c.JSON(412, gin.H{"message": "Unable to parse request", "exception": err.Error()})
+        return
+    }
+
+    events := make([]Event, 1)
+
+    data, _ := DB.Select(c.Param("id"))
+
+    err := surrealdb.Unmarshal(data, &events)
+
+    if err != nil || len(events) == 0 {
+        c.JSON(412, gin.H{"message": "Unable to find event", "exception": err.Error()})
+        return
+    }
+
+    events[0].Name = payload.Name
+    events[0].Title = payload.Title
+
+    eDate, _ := time.Parse("2024-01-30", payload.EventDate.Format("2024-04-04"))
+    endDate, _ := time.Parse("2024-01-30", payload.EventEndAt.Format("2024-04-04"))
+    events[0].EventDate = &eDate
+    events[0].EventEndAt = &endDate
+
+    data, err = DB.Change(c.Param("id"), &events)
+
+    if err != nil {
+        c.JSON(412, gin.H{"message": "Unable to update event", "exception": err.Error()})
+        return
+    }
+
+    err = surrealdb.Unmarshal(data, &events)
+
+    if err != nil {
+        c.JSON(412, gin.H{"message": "Unable to Unmarshal event", "exception": err.Error()})
+        return
+    }
+
+    c.JSON(200, gin.H{"message": "Event was updated successfully", "event": events[0].Id})
 }

@@ -40,7 +40,7 @@ DEFINE TABLE event SCHEMALESS
         FOR create, update, delete, select where tenant = $auth.id;
 
 DEFINE FIELD name ON TABLE event TYPE string;
-DEFINE FIELD cover_photo ON TABLE event TYPE string;
+DEFINE FIELD cover_photo ON TABLE event TYPE option<string>;
 DEFINE FIELD title ON TABLE event TYPE string;
 DEFINE FIELD event_date ON TABLE event TYPE datetime;
 DEFINE FIELD event_end_at ON TABLE event TYPE datetime;

@@ -59,7 +59,6 @@ func TestInvaliSingupRequest(t *testing.T) {
 }
 
 func TestSuccessfulSingup(t *testing.T) {
-
     w := httptest.NewRecorder()
 
     payload := &SignupPayload{

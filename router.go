@@ -36,7 +36,8 @@ func Authendicate(c *gin.Context) {
         c.AbortWithStatusJSON(401, gin.H{"message": "Unauthendicated"})
     }
 
-    GetTenant()
+    user := GetTenant()
+    c.Set("user", user)
 
     c.Next()
 }

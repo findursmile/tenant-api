@@ -8,8 +8,6 @@ import (
 	"github.com/surrealdb/surrealdb.go"
 )
 
-var AuthTenant *Tenant
-
 type SignupPayload struct {
     Name string `json:"name"`
     Mobile string `json:"mobile"`
@@ -92,10 +90,6 @@ func Signin(c *gin.Context) {
 }
 
 func GetTenant() (*Tenant) {
-    if AuthTenant != nil {
-        return AuthTenant
-    }
-
     data, err := DB.Select("tenant")
 
     if err != nil {
@@ -110,7 +104,5 @@ func GetTenant() (*Tenant) {
         panic(err)
     }
 
-    AuthTenant = &tenants[0]
-
-    return AuthTenant
+    return &tenants[0]
 }
