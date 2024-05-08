@@ -53,7 +53,7 @@ type Event struct {
 }
 
 type CreateEventPayload struct {
-    Name string `json:"name" binding: "required"`
+    Name string `json:"name" bindings: "required"`
     Title string `json:"title" binding: "required"`
     CoverPhoto string `json:"cover_photo"`
     EventDate *JsonDate `json:"event_date" binding: "required"`
@@ -126,38 +126,32 @@ func UpdateEvent(c *gin.Context) {
         return
     }
 
-    events := make([]Event, 1)
+    data, err := DB.Select(c.Param("id"))
 
-    data, _ := DB.Select(c.Param("id"))
+    if err != nil  || data == nil {
+        c.JSON(412, gin.H{"message": "Unable to select event"})
+        return
+    }
 
-    err := surrealdb.Unmarshal(data, &events)
+    event := new(Event)
 
-    if err != nil || len(events) == 0 {
+    if err = surrealdb.Unmarshal(data, &event); err != nil {
         c.JSON(412, gin.H{"message": "Unable to find event", "exception": err.Error()})
         return
     }
 
-    events[0].Name = payload.Name
-    events[0].Title = payload.Title
+    payload.Tenant = GetTenant().Id
+    payload.Status = event.Status
 
-    eDate, _ := time.Parse("2024-01-30", payload.EventDate.Format("2024-04-04"))
-    endDate, _ := time.Parse("2024-01-30", payload.EventEndAt.Format("2024-04-04"))
-    events[0].EventDate = &eDate
-    events[0].EventEndAt = &endDate
-
-    data, err = DB.Change(c.Param("id"), &events)
-
-    if err != nil {
-        c.JSON(412, gin.H{"message": "Unable to update event", "exception": err.Error()})
+    if data, err = DB.Update(event.Id, &payload); err != nil {
+        c.JSON(412, gin.H{"message": "Unable to update event -> " + event.Id, "exception": err.Error()})
         return
     }
 
-    err = surrealdb.Unmarshal(data, &events)
-
-    if err != nil {
+    if err = surrealdb.Unmarshal(data, &event); err != nil {
         c.JSON(412, gin.H{"message": "Unable to Unmarshal event", "exception": err.Error()})
         return
     }
 
-    c.JSON(200, gin.H{"message": "Event was updated successfully", "event": events[0].Id})
+    c.JSON(200, gin.H{"message": "Event was updated successfully", "event": event.Id})
 }

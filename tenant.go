@@ -100,7 +100,7 @@ func GetTenant() (*Tenant) {
 
     err = surrealdb.Unmarshal(data, &tenants)
 
-    if err != nil {
+    if err != nil || len(tenants) == 0 {
         panic(err)
     }
 
