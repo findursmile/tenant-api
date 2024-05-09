@@ -112,14 +112,13 @@ func CreateEvent(c *gin.Context) {
         }
     }
 
-    // data, err := DB.Create("event", &payload)
     data, err := DB.Query(`CREATE event SET
         title = $title,
         name=$name,
         event_date = <datetime>$event_date,
         event_end_at=<datetime>$event_end_at,
         status=$status,
-        tenant=$tenant;`, payload)
+        tenant=$tenant;`, &payload)
 
     if err != nil {
         c.JSON(412, gin.H{"message": "Unable to create event", "exception": err.Error()})
@@ -152,7 +151,11 @@ func UpdateEvent(c *gin.Context) {
         return
     }
 
-    data, err := DB.Select(c.Param("id"))
+    eventId := c.Param("id")
+
+    DB.Let("event", eventId)
+
+    data, err := DB.Select(eventId)
 
     if err != nil  || data == nil {
         c.JSON(412, gin.H{"message": "Unable to select event"})
@@ -166,10 +169,18 @@ func UpdateEvent(c *gin.Context) {
         return
     }
 
-    payload.Tenant = GetTenant().Id
-    payload.Status = event.Status
+    if tenant, ok := c.Get("tenant"); ok {
+        payload.Tenant = tenant.(*Tenant).Id
+    }
 
-    if data, err = DB.Update(event.Id, &payload); err != nil {
+    sql := `UPDATE $event set
+        title = $title,
+        name = $name,
+        event_date = <datetime>$event_date,
+        event_end_at = <datetime>$event_end_at,
+        tenant = $tenant;`
+
+    if data, err = DB.Query(sql, &payload); err != nil {
         c.JSON(412, gin.H{"message": "Unable to update event -> " + event.Id, "exception": err.Error()})
         return
     }
