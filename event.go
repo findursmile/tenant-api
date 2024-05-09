@@ -13,7 +13,8 @@ import (
 func RegisterEventRoutes() {
     ApiRouter.GET("events", GetEvents)
     ApiRouter.POST("events", CreateEvent)
-    ApiRouter.POST("events/:id", UpdateEvent)
+    ApiRouter.POST("events/:eventId", UpdateEvent)
+    ApiRouter.DELETE("events/:eventId", DeleteEvent)
 }
 
 type JsonDate time.Time
@@ -147,7 +148,7 @@ func UpdateEvent(c *gin.Context) {
         return
     }
 
-    eventId := c.Param("id")
+    eventId := c.Param("eventId")
 
     DB.Let("event", eventId)
 
@@ -186,11 +187,25 @@ func UpdateEvent(c *gin.Context) {
     c.JSON(200, gin.H{"message": "Event was updated successfully", "event": event.Id})
 }
 
+func DeleteEvent(c *gin.Context) {
+    eventId := c.Param("eventId")
+
+    payload := map[string]string{
+        "eventId": eventId,
+    }
+
+    if _, err := DB.Query(`UPDATE $eventId SET status="deleted"`, &payload); err != nil {
+        c.JSON(412, gin.H{"message": "Unable to delete event"})
+    }
+
+    c.JSON(200, gin.H{"message": "Event was deleted"})
+}
+
 func handleCoverPhoto(c *gin.Context, eventId string) {
     file, err := c.FormFile("cover_photo")
 
     if err == nil {
-        relativePath := "data/images/" + eventId + "/cover_" + file.Filename
+        relativePath := GetEventImageDir(&eventId) + "/cover_" + file.Filename
         path, err := filepath.Abs(relativePath)
         if err == nil {
             c.SaveUploadedFile(file, path)

@@ -67,6 +67,7 @@ DEFINE TABLE image SCHEMALESS
 
 DEFINE FIELD image_uri ON TABLE image TYPE string;
 DEFINE FIELD status ON TABLE image TYPE string;
+DEFINE FIELD event ON TABLE image TYPE record<event>;
 
 DEFINE FIELD created ON image VALUE time::now() READONLY TYPE datetime;
 DEFINE FIELD updated ON image VALUE time::now() TYPE datetime;

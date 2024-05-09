@@ -24,6 +24,7 @@ func DefineRoutes(router *gin.Engine) {
     ApiRouter.Use(Authendicate)
 
     RegisterEventRoutes()
+    RegisterImageRoutes()
 }
 
 func Authendicate(c *gin.Context) {
