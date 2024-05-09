@@ -103,14 +103,6 @@ func CreateEvent(c *gin.Context) {
     }
     payload.Tenant = tenant.Id
 
-    file, err := c.FormFile("cover_photo")
-
-    if err == nil {
-        path, err := filepath.Abs("data/images/" + file.Filename)
-        if err == nil {
-            c.SaveUploadedFile(file, path)
-        }
-    }
 
     data, err := DB.Query(`CREATE event SET
         title = $title,
@@ -139,8 +131,12 @@ func CreateEvent(c *gin.Context) {
         c.JSON(412, gin.H{"message": "Unable to Unmarshal event", "exception": err.Error()})
         return
     }
+    eventId := result[0].Result[0].Id
+    DB.Let("event", eventId)
 
-    c.JSON(200, gin.H{"message": "Event was created successfully", "event": result[0].Result[0].Id})
+    handleCoverPhoto(c, eventId)
+
+    c.JSON(200, gin.H{"message": "Event was created successfully", "event": eventId})
 }
 
 func UpdateEvent(c *gin.Context) {
@@ -185,10 +181,23 @@ func UpdateEvent(c *gin.Context) {
         return
     }
 
-    if err = surrealdb.Unmarshal(data, &event); err != nil {
-        c.JSON(412, gin.H{"message": "Unable to Unmarshal event", "exception": err.Error()})
-        return
-    }
+    handleCoverPhoto(c, eventId)
 
     c.JSON(200, gin.H{"message": "Event was updated successfully", "event": event.Id})
+}
+
+func handleCoverPhoto(c *gin.Context, eventId string) {
+    file, err := c.FormFile("cover_photo")
+
+    if err == nil {
+        relativePath := "data/images/" + eventId + "/cover_" + file.Filename
+        path, err := filepath.Abs(relativePath)
+        if err == nil {
+            c.SaveUploadedFile(file, path)
+        }
+
+        DB.Query("UPDATE $event SET cover_photo=$path", map[string]string{
+            "path": relativePath,
+        })
+    }
 }
