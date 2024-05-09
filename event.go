@@ -1,7 +1,8 @@
 package main
 
 import (
-	"encoding/json"
+	"fmt"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -22,6 +23,7 @@ func (j *JsonDate) UnmarshalJSON(b []byte) error {
     s := strings.Trim(string(b), "\"")
     t, err := time.Parse("2006-01-02", s)
     if err != nil {
+        fmt.Println("Unable to parse date")
         return err
     }
     *j = JsonDate(t)
@@ -29,7 +31,9 @@ func (j *JsonDate) UnmarshalJSON(b []byte) error {
 }
 
 func (j JsonDate) MarshalJSON() ([]byte, error) {
-    return json.Marshal(time.Time(j))
+    t := time.Time(j)
+    var stamp = fmt.Sprintf(`"%s"`, t.Format("2006-01-01"))
+    return []byte(stamp), nil
 }
 
 // Maybe a Format function for printing your date
@@ -53,13 +57,13 @@ type Event struct {
 }
 
 type CreateEventPayload struct {
-    Name string `json:"name" bindings: "required"`
-    Title string `json:"title" binding: "required"`
-    CoverPhoto string `json:"cover_photo"`
-    EventDate *JsonDate `json:"event_date" binding: "required"`
-    EventEndAt *JsonDate `json:"event_end_at" binding: "required"`
-    Tenant string `json:"tenant"`
-    Status string `json:"status"`
+    Name string `form:"name" json:"name" binding:"required"`
+    Title string `form:"title" json:"title" binding:"required"`
+    // CoverPhoto string `form:"cover_photo" json:"cover_photo"`
+    EventDate *JsonDate `form:"event_date" json:"event_date" binding:"required"`
+    EventEndAt *JsonDate `form:"event_end_at" json:"event_end_at" binding:"required"`
+    Tenant string `form:"tenant" json:"tenant"`
+    Status string `form:"status" json:"status"`
 }
 
 func GetEvents(c *gin.Context) {
@@ -79,7 +83,7 @@ func GetEvents(c *gin.Context) {
 func CreateEvent(c *gin.Context) {
     var payload CreateEventPayload;
 
-    if err := c.ShouldBindJSON(&payload); err != nil {
+    if err := c.ShouldBind(&payload); err != nil {
         c.JSON(412, gin.H{"message": "Unable to parse request", "exception": err.Error()})
         return
     }
@@ -99,29 +103,51 @@ func CreateEvent(c *gin.Context) {
     }
     payload.Tenant = tenant.Id
 
-    data, err := DB.Create("event", &payload)
+    file, err := c.FormFile("cover_photo")
+
+    if err == nil {
+        path, err := filepath.Abs("data/images/" + file.Filename)
+        if err == nil {
+            c.SaveUploadedFile(file, path)
+        }
+    }
+
+    // data, err := DB.Create("event", &payload)
+    data, err := DB.Query(`CREATE event SET
+        title = $title,
+        name=$name,
+        event_date = <datetime>$event_date,
+        event_end_at=<datetime>$event_end_at,
+        status=$status,
+        tenant=$tenant;`, payload)
 
     if err != nil {
         c.JSON(412, gin.H{"message": "Unable to create event", "exception": err.Error()})
         return
     }
 
-    events := make([]Event, 1)
+    type res struct {
+        Result []Event `json:"result"`
+        Status string `json:"status"`
+        Time string `json:"time"`
+    }
 
-    err = surrealdb.Unmarshal(data, &events)
+    result := make([]res, 1)
+
+    err = surrealdb.Unmarshal(data, &result)
 
     if err != nil {
         c.JSON(412, gin.H{"message": "Unable to Unmarshal event", "exception": err.Error()})
         return
     }
 
-    c.JSON(200, gin.H{"message": "Event was created successfully", "event": events[0].Id})
+    c.JSON(200, gin.H{"message": "Event was created successfully", "event": result[0].Result[0].Id})
 }
 
 func UpdateEvent(c *gin.Context) {
     var payload CreateEventPayload;
 
-    if err := c.ShouldBindJSON(&payload); err != nil {
+    if err := c.ShouldBind(&payload); err != nil {
         c.JSON(412, gin.H{"message": "Unable to parse request", "exception": err.Error()})
         return
     }

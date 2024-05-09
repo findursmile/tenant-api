@@ -47,7 +47,7 @@ DEFINE FIELD event_end_at ON TABLE event TYPE datetime;
 DEFINE FIELD status ON TABLE event TYPE string;
 DEFINE FIELD tenant ON TABLE event TYPE record<tenant>;
 
-DEFINE FIELD created ON event VALUE time::now() READONLY TYPE datetime;
+DEFINE FIELD created ON event VALUE time::now() READONLY;
 DEFINE FIELD updated ON event VALUE time::now() TYPE datetime;
 
 

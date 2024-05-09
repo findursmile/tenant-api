@@ -25,7 +25,11 @@ func GetToken() string {
         DB : os.Getenv("DB_DATABASE"),
     }
 
-    DB.Signup(payload)
+    _, err := DB.Signup(payload)
+
+    if err != nil {
+        panic(err)
+    }
 
     signInPayload := &SigninPayload{
         Email: "praem1990@gmail.com",
@@ -35,7 +39,10 @@ func GetToken() string {
         DB : os.Getenv("DB_DATABASE"),
     }
 
-    token, _ := DB.Signin(&signInPayload)
+    token, err := DB.Signin(&signInPayload)
+    if err != nil {
+        panic(err)
+    }
 
     return token.(string)
 }

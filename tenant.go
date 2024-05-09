@@ -9,11 +9,11 @@ import (
 )
 
 type SignupPayload struct {
-    Name string `json:"name"`
-    Mobile string `json:"mobile"`
-    Country_code string `json:"country_code"`
-    Email string `json:"email"`
-    Password string `json:"password"`
+    Name string `json:"name" binding:"required"`
+    Mobile string `json:"mobile" binding:"required"`
+    Country_code string `json:"country_code" binding:"required"`
+    Email string `json:"email" binding:"required"`
+    Password string `json:"password" binding:"required"`
     Status string `json:"status"`
     NS string `json:"NS"`
     DB string `json:"DB"`
@@ -21,8 +21,8 @@ type SignupPayload struct {
 }
 
 type SigninPayload struct {
-    Email string `json:"email"`
-    Password string `json:"password"`
+    Email string `json:"email" binding:"required"`
+    Password string `json:"password" binding:"required"`
     NS string `json:"NS"`
     DB string `json:"DB"`
     SC string `json:"SC"`
@@ -43,7 +43,7 @@ type Tenant struct {
 func Signup(c *gin.Context) {
     var payload SignupPayload;
 
-    err := c.ShouldBindJSON(&payload)
+    err := c.ShouldBind(&payload)
 
     if err != nil {
         c.JSON(412, gin.H{"message": "Unable to parse request", "exception": err.Error()})
@@ -68,7 +68,7 @@ func Signup(c *gin.Context) {
 func Signin(c *gin.Context) {
     var signinPayload SigninPayload;
 
-    err := c.ShouldBindJSON(&signinPayload)
+    err := c.ShouldBind(&signinPayload)
 
     if err != nil {
         c.JSON(412, gin.H{"message": "Unable to parse request", "exception": err.Error()})
