@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"path/filepath"
 	"strings"
 	"time"
@@ -15,6 +16,7 @@ func RegisterEventRoutes() {
     ApiRouter.POST("events", CreateEvent)
     ApiRouter.POST("events/:eventId", UpdateEvent)
     ApiRouter.DELETE("events/:eventId", DeleteEvent)
+    ApiRouter.PUT("events/:eventId/publish", PublishEvent)
 }
 
 type JsonDate time.Time
@@ -199,6 +201,28 @@ func DeleteEvent(c *gin.Context) {
     }
 
     c.JSON(200, gin.H{"message": "Event was deleted"})
+}
+
+func failOnError(err error, msg string) {
+  if err != nil {
+    log.Panicf("%s: %s", msg, err)
+  }
+}
+
+func PublishEvent(c *gin.Context) {
+    eventId := c.Param("eventId")
+
+    payload := map[string]string{
+        "eventId": eventId,
+    }
+
+    if _, err := DB.Query(`UPDATE $eventId SET status="publish"`, &payload); err != nil {
+        c.JSON(412, gin.H{"message": "Unable to publish event"})
+    }
+
+    go PublishEventMessage(eventId)
+
+    c.JSON(200, gin.H{"message": "Event was published"})
 }
 
 func handleCoverPhoto(c *gin.Context, eventId string) {
