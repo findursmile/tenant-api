@@ -82,7 +82,7 @@ func UploadImages(c *gin.Context) {
     count := 0
 
     for _, image := range images {
-        uri := GetEventImageDir(&eventId)
+        uri := GetEventImageDir(&eventId) + "/" + image.Filename
         path, _ := filepath.Abs(uri)
 
         if err = c.SaveUploadedFile(image, path); err != nil {
