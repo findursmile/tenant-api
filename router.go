@@ -1,44 +1,44 @@
 package main
 
 import (
-	"strings"
-
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"strings"
 )
 
-var ApiRouter *gin.RouterGroup;
+var ApiRouter *gin.RouterGroup
 
 func SetupRoutes() *gin.Engine {
-    r := gin.Default()
+	r := gin.Default()
+	r.Use(cors.Default())
+	DefineRoutes(r)
 
-    DefineRoutes(r)
-
-    return r
+	return r
 }
 
 func DefineRoutes(router *gin.Engine) {
-    router.POST("api/signin", Signin)
-    router.POST("api/signup", Signup)
+	router.POST("api/signin", Signin)
+	router.POST("api/signup", Signup)
 
-    ApiRouter = router.Group("api")
-    ApiRouter.Use(Authendicate)
+	ApiRouter = router.Group("api")
+	ApiRouter.Use(Authendicate)
 
-    RegisterEventRoutes()
-    RegisterImageRoutes()
+	RegisterEventRoutes()
+	RegisterImageRoutes()
 }
 
 func Authendicate(c *gin.Context) {
-    token := c.GetHeader("Authorization")
-    token, _ = strings.CutPrefix(token, "Bearer ")
+	token := c.GetHeader("Authorization")
+	token, _ = strings.CutPrefix(token, "Bearer ")
 
-    _, err := DB.Authenticate(token)
+	_, err := DB.Authenticate(token)
 
-    if (err != nil) {
-        c.AbortWithStatusJSON(401, gin.H{"message": "Unauthendicated"})
-    }
+	if err != nil {
+		c.AbortWithStatusJSON(401, gin.H{"message": "Unauthendicated"})
+	}
 
-    tenant := GetTenant()
-    c.Set("tenant", tenant)
+	tenant := GetTenant()
+	c.Set("tenant", tenant)
 
-    c.Next()
+	c.Next()
 }
