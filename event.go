@@ -93,7 +93,7 @@ func CreateEvent(c *gin.Context) {
 
     payload.Status = "pending"
 
-    authUser, exists := c.Get("user")
+    authUser, exists := c.Get("tenant")
     if exists == false {
         c.JSON(412, gin.H{"message": "Unable to get the user"})
         return

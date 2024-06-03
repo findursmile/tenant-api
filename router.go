@@ -1,16 +1,22 @@
 package main
 
 import (
+	"strings"
+
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"strings"
 )
 
 var ApiRouter *gin.RouterGroup
 
 func SetupRoutes() *gin.Engine {
 	r := gin.Default()
-	r.Use(cors.Default())
+    config := cors.DefaultConfig()
+    config.AllowAllOrigins = true
+    config.AddAllowHeaders("Authorization")
+
+    r.Use(cors.New(config))
+
 	DefineRoutes(r)
 
 	return r
