@@ -27,7 +27,7 @@ func InitDB() {
     DB, err = surrealdb.New(endpoint)
 
     if err != nil {
-        panic(err)
+      panic(fmt.Sprintf("Error connecting to database: %v", err))
     }
 
     DB.Use(os.Getenv( "DB_NAMESPACE" ), os.Getenv( "DB_DATABASE" ))
