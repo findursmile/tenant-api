@@ -47,6 +47,7 @@ func TestInvaliSingupRequest(t *testing.T) {
     w := httptest.NewRecorder()
 
     req, _ := http.NewRequest("POST", "/api/signup", nil)
+    req.Header.Add("Content-Type", "application/json")
 
     router.ServeHTTP(w, req)
 
@@ -62,14 +63,16 @@ func TestSuccessfulSingup(t *testing.T) {
     w := httptest.NewRecorder()
 
     payload := &SignupPayload{
-        Email: "praem1990@gmail.com",
+        Name: "Mohan Raj",
+        Email: "praem19902@gmail.com",
         Password: "asdf",
-        Country_code: "IN",
+        CountryCode: "IN",
         Mobile: "0909090",
     }
 
     s, _ := json.Marshal(payload)
     req, _ := http.NewRequest("POST", "/api/signup", bytes.NewReader(s))
+    req.Header.Add("Content-Type", "application/json")
 
     router.ServeHTTP(w, req)
 
@@ -91,6 +94,7 @@ func TestLogin(t *testing.T) {
 
     s, _ := json.Marshal(payload)
     req, _ := http.NewRequest("POST", "/api/signin", bytes.NewReader(s))
+    req.Header.Add("Content-Type", "application/json")
 
     router.ServeHTTP(w, req)
 
