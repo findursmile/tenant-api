@@ -11,9 +11,10 @@ import (
 	"github.com/surrealdb/surrealdb.go"
 )
 
-func RegisterEventRoutes() {
+func RegisterEventRoutes(route *gin.Engine) {
     ApiRouter.GET("events", GetEvents)
     ApiRouter.POST("events", CreateEvent)
+    route.GET("api/events/:eventId", GetEvent)
     ApiRouter.POST("events/:eventId", UpdateEvent)
     ApiRouter.DELETE("events/:eventId", DeleteEvent)
     ApiRouter.PUT("events/:eventId/publish", PublishEvent)
@@ -83,6 +84,21 @@ func GetEvents(c *gin.Context) {
     c.JSON(200, gin.H{"events": userEvents})
 }
 
+func GetEvent(c *gin.Context) {
+    data, err := DB.Select(c.Param("eventId"))
+
+    if err != nil {
+        c.AbortWithStatusJSON(404, gin.H{"message": "Event was not found"})
+        return
+    }
+
+    var results Event
+
+    surrealdb.Unmarshal(data, &results)
+
+    c.JSON(200, gin.H{"event": results})
+}
+
 func CreateEvent(c *gin.Context) {
     var payload CreateEventPayload;
 
@@ -105,7 +121,6 @@ func CreateEvent(c *gin.Context) {
         return
     }
     payload.Tenant = tenant.Id
-
 
     data, err := DB.Query(`CREATE event SET
         title = $title,

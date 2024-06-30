@@ -11,17 +11,17 @@ import (
 	"github.com/surrealdb/surrealdb.go"
 )
 
-func RegisterImageRoutes() {
-    ApiRouter.GET("events/:eventId/images", GetImages)
+func RegisterImageRoutes(router *gin.Engine) {
+    router.GET("events/:eventId/images", GetImages)
     ApiRouter.POST("events/:eventId/images", UploadImages)
     ApiRouter.DELETE("events/:eventId/images/:imageId", DeleteImage)
 }
 
 type ImageFilter struct {
+    EventId string `json:"event_id" form:"event_id"`
     PageNo int `json:"page,default=1" form:"page,default=1"`
     Limit int `json:"limit,default=25" form:"limit,default=25"`
     Start int `json:"start,default=0" form:"start,default=0"`
-    EventId string `json:"event_id" form:"event_id"`
 }
 
 type Image struct {
@@ -47,7 +47,6 @@ func GetImages(c *gin.Context) {
 
     sql := `SELECT * from image where event = $event_id LIMIT $limit START $start`
     data, err := DB.Query(sql, &filter)
-    fmt.Println(filter)
 
     if err != nil {
         c.JSON(412, gin.H{"message": "Unable to parse request", "exception": err.Error()})
