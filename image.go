@@ -22,6 +22,7 @@ type ImageFilter struct {
     PageNo int `json:"page,default=1" form:"page,default=1"`
     Limit int `json:"limit,default=25" form:"limit,default=25"`
     Start int `json:"start,default=0" form:"start,default=0"`
+    Encode []float32 `json:"encode" form:"encode"`
 }
 
 type Image struct {
@@ -39,8 +40,6 @@ func GetImages(c *gin.Context) {
         c.JSON(412, gin.H{"message": "Unable to parse request", "exception": err.Error()})
         return
     }
-
-    c.ShouldBind(&filter)
 
     filter.Start = (filter.PageNo - 1) * filter.Limit
     filter.EventId = c.Param("eventId")

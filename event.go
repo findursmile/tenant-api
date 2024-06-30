@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"path/filepath"
 	"strings"
 	"time"
@@ -220,7 +219,7 @@ func DeleteEvent(c *gin.Context) {
 
 func failOnError(err error, msg string) {
   if err != nil {
-    log.Panicf("%s: %s", msg, err)
+    fmt.Printf("\n%s: %s\n", msg, err)
   }
 }
 

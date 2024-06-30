@@ -16,15 +16,26 @@ type RabbitMQConfig struct {
     Pass string
 }
 
-func GetChannel() *amqp.Channel {
+func GetChannel() (*amqp.Channel, error) {
     config := ParseConfig()
     url := fmt.Sprintf("amqp://%s:%s@%s:%s", config.User, config.Pass, config.Host, config.Port)
+
     conn, err := amqp.Dial(url)
-    failOnError(err, "Failed to connect to RabbitMQ")
+
+    if err != nil {
+        failOnError(err, "Failed to open a channel")
+        return nil, err
+    }
+
     defer conn.Close()
 
     ch, err := conn.Channel()
-    failOnError(err, "Failed to open a channel")
+
+    if err != nil {
+        failOnError(err, "Failed to open a channel")
+        return nil, err
+    }
+
     defer ch.Close()
 
     _, err = ch.QueueDeclare(
@@ -37,16 +48,21 @@ func GetChannel() *amqp.Channel {
     )
     failOnError(err, "Failed to declare a queue")
 
-    return ch
+    return ch, nil
 }
 
 func PublishEventMessage(eventId string) {
-    ch := GetChannel()
+    ch, err := GetChannel()
+
+    if err != nil {
+        return
+    }
+
     ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
     defer cancel()
 
     body := fmt.Sprintf(`{"event": "%s"}`, eventId)
-    err := ch.PublishWithContext(ctx,
+    err = ch.PublishWithContext(ctx,
     "",     // exchange
     "events", // routing key Should be same as queue name
     false,  // mandatory
