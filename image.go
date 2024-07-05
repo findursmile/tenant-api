@@ -45,6 +45,10 @@ func GetImages(c *gin.Context) {
     filter.EventId = c.Param("eventId")
 
     sql := `SELECT * from image where event = $event_id LIMIT $limit START $start`
+    if filter.Encode != nil {
+        sql = `select *,<-face_of.in.image_uri as uri, vector::similarity::cosine(encode, position) as similarity_score
+from face_encoding where vector::similarity::cosine(encode, encoding) > 0.8`
+    }
     data, err := DB.Query(sql, &filter)
 
     if err != nil {
@@ -98,7 +102,23 @@ func UploadImages(c *gin.Context) {
         }
 
         if res, err := DB.Query(sql, &payload); err == nil {
-            fmt.Println(res)
+            type result struct {
+                Result []Image `json:"result"`
+                Status string `json:"status"`
+                Time string `json:"time"`
+            }
+
+            results := make([]result, 1)
+
+            surrealdb.Unmarshal(res, &results)
+            _, err = DB.Query("RELATE $event->event_of->$image", &map[string]string{
+                "image": results[0].Result[0].Id,
+                "event": eventId,
+            })
+
+            if err != nil {
+                fmt.Println(err)
+            }
             count++
         } else {
             c.JSON(http.StatusBadRequest, gin.H{"message": "Unable to creat image"})

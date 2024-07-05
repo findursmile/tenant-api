@@ -16,29 +16,33 @@ type RabbitMQConfig struct {
     Pass string
 }
 
-func GetChannel() (*amqp.Channel, error) {
+var Conn *amqp.Connection
+var Ch *amqp.Channel
+
+func GetChannel() (*amqp.Connection, *amqp.Channel, error) {
     config := ParseConfig()
     url := fmt.Sprintf("amqp://%s:%s@%s:%s", config.User, config.Pass, config.Host, config.Port)
+    var err error;
 
-    conn, err := amqp.Dial(url)
+    if Conn == nil || Conn.IsClosed() {
+        Conn, err = amqp.Dial(url)
+
+        if err != nil {
+            failOnError(err, "Failed to open a channel")
+            return nil, nil, err
+        }
+    }
+
+    if Ch == nil || Ch.IsClosed() {
+        Ch, err = Conn.Channel()
+    }
 
     if err != nil {
         failOnError(err, "Failed to open a channel")
-        return nil, err
+        return nil, nil, err
     }
 
-    defer conn.Close()
-
-    ch, err := conn.Channel()
-
-    if err != nil {
-        failOnError(err, "Failed to open a channel")
-        return nil, err
-    }
-
-    defer ch.Close()
-
-    _, err = ch.QueueDeclare(
+    _, err = Ch.QueueDeclare(
         "events", // name
         false,   // durable
         false,   // delete when unused
@@ -48,11 +52,11 @@ func GetChannel() (*amqp.Channel, error) {
     )
     failOnError(err, "Failed to declare a queue")
 
-    return ch, nil
+    return Conn, Ch, nil
 }
 
 func PublishEventMessage(eventId string) {
-    ch, err := GetChannel()
+    _, ch, err := GetChannel()
 
     if err != nil {
         return
@@ -80,5 +84,15 @@ func ParseConfig() *RabbitMQConfig {
         Port: os.Getenv("RABBITMQ_PORT"),
         User: os.Getenv("RABBITMQ_USER"),
         Pass: os.Getenv("RABBITMQ_PASS"),
+    }
+}
+
+func Close() {
+    if Conn != nil && Conn.IsClosed() != false {
+        Conn.Close()
+    }
+
+    if Ch != nil && Ch.IsClosed() != false {
+        Ch.Close()
     }
 }

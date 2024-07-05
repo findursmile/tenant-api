@@ -75,6 +75,8 @@ DEFINE FIELD updated ON image VALUE time::now() TYPE datetime;
 
 # RELATION event_of  - Event event_of image
 DEFINE TABLE event_of TYPE RELATION FROM event TO image;
+# Eg., Query to relate an image to an event
+# RELATE image:asdfasdfasdf->event_of->event:asdfasdfsdf
 
 # Table encoding
 DEFINE TABLE face_encoding SCHEMALESS;
@@ -86,4 +88,6 @@ DEFINE FIELD updated ON face_encoding VALUE time::now() TYPE datetime;
 
 # RELATION face_of  - image face_of face_encoding
 DEFINE TABLE face_of TYPE RELATION FROM image TO face_encoding;
+
+# select * from image where vector::similarity::cosine(encode, ->face_of.out.encoding) > 0.8
 
