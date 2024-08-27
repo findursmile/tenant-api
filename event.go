@@ -95,7 +95,31 @@ func GetEvent(c *gin.Context) {
 
     surrealdb.Unmarshal(data, &results)
 
-    c.JSON(200, gin.H{"event": results})
+    sql := `SELECT count(id), status from image where event = $event_id group by status`
+
+    data, err = DB.Query(sql, &map[string]string{
+        "event_id": c.Param("eventId"),
+    })
+
+    type info struct {
+        Result interface{} `json:"result"`
+        Status string `json:"status"`
+        Time string `json:"time"`
+    }
+
+    result := make([]info, 1)
+
+    err = surrealdb.Unmarshal(data, &result)
+
+    if err != nil {
+        panic(err)
+    }
+
+    surrealdb.Unmarshal(data, &result)
+
+    fmt.Print(result)
+
+    c.JSON(200, gin.H{"event": results, "info": result[0].Result})
 }
 
 func CreateEvent(c *gin.Context) {
