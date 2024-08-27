@@ -13,6 +13,7 @@ import (
 
 func RegisterImageRoutes(router *gin.Engine) {
     router.GET("events/:eventId/images", GetImages)
+    ApiRouter.GET("events/:eventId/images", GetImages)
     ApiRouter.POST("events/:eventId/images", UploadImages)
     ApiRouter.DELETE("events/:eventId/images/:imageId", DeleteImage)
 }
@@ -44,7 +45,7 @@ func GetImages(c *gin.Context) {
     filter.Start = (filter.PageNo - 1) * filter.Limit
     filter.EventId = c.Param("eventId")
 
-    sql := `SELECT * from image where event = $event_id LIMIT $limit START $start`
+    sql := `SELECT * from image where event = $event_id order by created desc LIMIT $limit START $start`
     if filter.Encode != nil {
         sql = `select *,<-face_of.in.image_uri as uri, vector::similarity::cosine(encode, position) as similarity_score
 from face_encoding where vector::similarity::cosine(encode, encoding) > 0.8`
