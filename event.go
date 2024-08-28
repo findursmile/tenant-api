@@ -64,7 +64,7 @@ type CreateEventPayload struct {
     Title string `form:"title" json:"title" binding:"required"`
     // CoverPhoto string `form:"cover_photo" json:"cover_photo"`
     EventDate *JsonDate `form:"event_date" json:"event_date" binding:"required"`
-    EventEndAt *JsonDate `form:"event_end_at" json:"event_end_at" binding:"required"`
+    EventEndAt *JsonDate `form:"event_end_at" json:"event_end_at"`
     Tenant string `form:"tenant" json:"tenant"`
     Status string `form:"status" json:"status"`
 }
@@ -119,7 +119,7 @@ func GetEvent(c *gin.Context) {
 
     fmt.Print(result)
 
-    c.JSON(200, gin.H{"event": results, "info": result[0].Result})
+    c.JSON(200, gin.H{"event": results, "images_info": result[0].Result})
 }
 
 func CreateEvent(c *gin.Context) {
@@ -149,7 +149,7 @@ func CreateEvent(c *gin.Context) {
         title = $title,
         name=$name,
         event_date = <datetime>$event_date,
-        event_end_at=<datetime>$event_end_at,
+        event_end_at = <datetime>$event_date,
         status=$status,
         tenant=$tenant;`, &payload)
 
@@ -161,7 +161,6 @@ func CreateEvent(c *gin.Context) {
     type res struct {
         Result []Event `json:"result"`
         Status string `json:"status"`
-        Time string `json:"time"`
     }
 
     result := make([]res, 1)
@@ -266,15 +265,17 @@ func PublishEvent(c *gin.Context) {
 func handleCoverPhoto(c *gin.Context, eventId string) {
     file, err := c.FormFile("cover_photo")
 
-    if err == nil {
-        relativePath := GetEventImageDir(&eventId) + "/cover_" + file.Filename
-        path, err := filepath.Abs(relativePath)
-        if err == nil {
-            c.SaveUploadedFile(file, path)
-        }
-
-        DB.Query("UPDATE $event SET cover_photo=$path", map[string]string{
-            "path": relativePath,
-        })
+    if err != nil {
+        return
     }
+
+    relativePath := GetEventImageDir(&eventId) + "/cover_" + file.Filename
+    path, err := filepath.Abs(relativePath)
+    if err == nil {
+        c.SaveUploadedFile(file, path)
+    }
+
+    DB.Query("UPDATE $event SET cover_photo=$path", map[string]string{
+        "path": relativePath,
+    })
 }
