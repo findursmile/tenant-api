@@ -13,6 +13,7 @@ import (
 
 func RegisterImageRoutes(router *gin.Engine) {
     router.GET("events/:eventId/images", GetImages)
+    router.POST("events/:eventId/images", GetImages)
     ApiRouter.GET("events/:eventId/images", GetImages)
     ApiRouter.POST("events/:eventId/images", UploadImages)
     ApiRouter.DELETE("events/:eventId/images/:imageId", DeleteImage)
@@ -23,7 +24,7 @@ type ImageFilter struct {
     PageNo int `json:"page,default=1" form:"page,default=1"`
     Limit int `json:"limit,default=25" form:"limit,default=25"`
     Start int `json:"start,default=0" form:"start,default=0"`
-    Encode []float32 `json:"encode" form:"encode"`
+    Encode []float32 `json:"encoding" form:"encoding"`
 }
 
 type Image struct {
@@ -47,8 +48,7 @@ func GetImages(c *gin.Context) {
 
     sql := `SELECT * from image where event = $event_id order by created desc LIMIT $limit START $start`
     if filter.Encode != nil {
-        sql = `select *,<-face_of.in.image_uri as uri, vector::similarity::cosine(encode, position) as similarity_score
-from face_encoding where vector::similarity::cosine(encode, encoding) > 0.8`
+        sql = `select * from image where event=$event_id and ->(face_of where vector::similarity::cosine($encoding, out.encoding) > 0.6) order by created desc LIMIT $limit START $start`
     }
     data, err := DB.Query(sql, &filter)
 
@@ -65,7 +65,10 @@ from face_encoding where vector::similarity::cosine(encode, encoding) > 0.8`
 
     results := make([]res, 1)
 
-    surrealdb.Unmarshal(data, &results)
+   if err = surrealdb.Unmarshal(data, &results); err != nil {
+        c.JSON(412, gin.H{"message": "Unable to parse request", "exception": err.Error()})
+        return
+   }
 
     c.JSON(200, gin.H{"images": results[0].Result})
 }
