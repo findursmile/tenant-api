@@ -16,18 +16,33 @@ type RabbitMQConfig struct {
     Pass string
 }
 
-func GetChannel() *amqp.Channel {
+var Conn *amqp.Connection
+var Ch *amqp.Channel
+
+func GetChannel() (*amqp.Connection, *amqp.Channel, error) {
     config := ParseConfig()
     url := fmt.Sprintf("amqp://%s:%s@%s:%s", config.User, config.Pass, config.Host, config.Port)
-    conn, err := amqp.Dial(url)
-    failOnError(err, "Failed to connect to RabbitMQ")
-    defer conn.Close()
+    var err error;
 
-    ch, err := conn.Channel()
-    failOnError(err, "Failed to open a channel")
-    defer ch.Close()
+    if Conn == nil || Conn.IsClosed() {
+        Conn, err = amqp.Dial(url)
 
-    _, err = ch.QueueDeclare(
+        if err != nil {
+            failOnError(err, "Failed to open a channel")
+            return nil, nil, err
+        }
+    }
+
+    if Ch == nil || Ch.IsClosed() {
+        Ch, err = Conn.Channel()
+    }
+
+    if err != nil {
+        failOnError(err, "Failed to open a channel")
+        return nil, nil, err
+    }
+
+    _, err = Ch.QueueDeclare(
         "events", // name
         false,   // durable
         false,   // delete when unused
@@ -37,16 +52,21 @@ func GetChannel() *amqp.Channel {
     )
     failOnError(err, "Failed to declare a queue")
 
-    return ch
+    return Conn, Ch, nil
 }
 
 func PublishEventMessage(eventId string) {
-    ch := GetChannel()
+    _, ch, err := GetChannel()
+
+    if err != nil {
+        return
+    }
+
     ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
     defer cancel()
 
     body := fmt.Sprintf(`{"event": "%s"}`, eventId)
-    err := ch.PublishWithContext(ctx,
+    err = ch.PublishWithContext(ctx,
     "",     // exchange
     "events", // routing key Should be same as queue name
     false,  // mandatory
@@ -64,5 +84,15 @@ func ParseConfig() *RabbitMQConfig {
         Port: os.Getenv("RABBITMQ_PORT"),
         User: os.Getenv("RABBITMQ_USER"),
         Pass: os.Getenv("RABBITMQ_PASS"),
+    }
+}
+
+func Close() {
+    if Conn != nil && Conn.IsClosed() != false {
+        Conn.Close()
+    }
+
+    if Ch != nil && Ch.IsClosed() != false {
+        Ch.Close()
     }
 }

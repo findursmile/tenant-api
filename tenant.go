@@ -11,7 +11,7 @@ import (
 type SignupPayload struct {
     Name string `json:"name" binding:"required"`
     Mobile string `json:"mobile" binding:"required"`
-    Country_code string `json:"country_code" binding:"required"`
+    CountryCode string `json:"country_code" binding:"required"`
     Email string `json:"email" binding:"required"`
     Password string `json:"password" binding:"required"`
     Status string `json:"status"`

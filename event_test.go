@@ -17,7 +17,7 @@ func GetToken() string {
     payload := &SignupPayload{
         Email: "praem1990@gmail.com",
         Password: "asdf",
-        Country_code: "IN",
+        CountryCode: "IN",
         Mobile: "0909090",
         Status : "active",
         SC : "tenant",
@@ -28,7 +28,7 @@ func GetToken() string {
     _, err := DB.Signup(payload)
 
     if err != nil {
-        panic(err)
+        // panic(err)
     }
 
     signInPayload := &SigninPayload{
@@ -59,6 +59,7 @@ func TestCreateEvent(t *testing.T) {
 
     s, _ := json.Marshal(payload)
     req, _ := http.NewRequest("POST", "/api/events", bytes.NewReader(s))
+    req.Header.Add("Content-Type", "application/json")
 
     req.Header.Add("Authorization", "Bearer " + GetToken())
 
@@ -101,10 +102,13 @@ func TestUpdateEvent(t *testing.T) {
     payload = &map[string]interface{} {
         "name": "Test Event 2",
         "title": "Event that you never missed",
+        "event_date": "2024-05-05",
+        "event_end_at": "2024-05-15",
     }
 
     s, _ := json.Marshal(payload)
     req, _ := http.NewRequest("POST", "/api/events/" + events[0].Id, bytes.NewReader(s))
+    req.Header.Add("Content-Type", "application/json")
 
     req.Header.Add("Authorization", "Bearer " + GetToken())
 

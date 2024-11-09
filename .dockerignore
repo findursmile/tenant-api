@@ -1,0 +1,6 @@
+.env
+
+tmp
+data/images/*
+data/images/.gitkeep
+

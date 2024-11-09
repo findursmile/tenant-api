@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"path/filepath"
 	"strings"
 	"time"
@@ -11,9 +10,10 @@ import (
 	"github.com/surrealdb/surrealdb.go"
 )
 
-func RegisterEventRoutes() {
+func RegisterEventRoutes(route *gin.Engine) {
     ApiRouter.GET("events", GetEvents)
     ApiRouter.POST("events", CreateEvent)
+    route.GET("api/events/:eventId", GetEvent)
     ApiRouter.POST("events/:eventId", UpdateEvent)
     ApiRouter.DELETE("events/:eventId", DeleteEvent)
     ApiRouter.PUT("events/:eventId/publish", PublishEvent)
@@ -64,7 +64,7 @@ type CreateEventPayload struct {
     Title string `form:"title" json:"title" binding:"required"`
     // CoverPhoto string `form:"cover_photo" json:"cover_photo"`
     EventDate *JsonDate `form:"event_date" json:"event_date" binding:"required"`
-    EventEndAt *JsonDate `form:"event_end_at" json:"event_end_at" binding:"required"`
+    EventEndAt *JsonDate `form:"event_end_at" json:"event_end_at"`
     Tenant string `form:"tenant" json:"tenant"`
     Status string `form:"status" json:"status"`
 }
@@ -81,6 +81,45 @@ func GetEvents(c *gin.Context) {
     }
 
     c.JSON(200, gin.H{"events": userEvents})
+}
+
+func GetEvent(c *gin.Context) {
+    data, err := DB.Select(c.Param("eventId"))
+
+    if err != nil {
+        c.AbortWithStatusJSON(404, gin.H{"message": "Event was not found"})
+        return
+    }
+
+    var results Event
+
+    surrealdb.Unmarshal(data, &results)
+
+    sql := `SELECT count(id), status from image where event = $event_id group by status`
+
+    data, err = DB.Query(sql, &map[string]string{
+        "event_id": c.Param("eventId"),
+    })
+
+    type info struct {
+        Result interface{} `json:"result"`
+        Status string `json:"status"`
+        Time string `json:"time"`
+    }
+
+    result := make([]info, 1)
+
+    err = surrealdb.Unmarshal(data, &result)
+
+    if err != nil {
+        panic(err)
+    }
+
+    surrealdb.Unmarshal(data, &result)
+
+    fmt.Print(result)
+
+    c.JSON(200, gin.H{"event": results, "images_info": result[0].Result})
 }
 
 func CreateEvent(c *gin.Context) {
@@ -106,12 +145,11 @@ func CreateEvent(c *gin.Context) {
     }
     payload.Tenant = tenant.Id
 
-
     data, err := DB.Query(`CREATE event SET
         title = $title,
         name=$name,
         event_date = <datetime>$event_date,
-        event_end_at=<datetime>$event_end_at,
+        event_end_at = <datetime>$event_date,
         status=$status,
         tenant=$tenant;`, &payload)
 
@@ -123,7 +161,6 @@ func CreateEvent(c *gin.Context) {
     type res struct {
         Result []Event `json:"result"`
         Status string `json:"status"`
-        Time string `json:"time"`
     }
 
     result := make([]res, 1)
@@ -205,7 +242,7 @@ func DeleteEvent(c *gin.Context) {
 
 func failOnError(err error, msg string) {
   if err != nil {
-    log.Panicf("%s: %s", msg, err)
+    fmt.Printf("\n%s: %s\n", msg, err)
   }
 }
 
@@ -228,15 +265,17 @@ func PublishEvent(c *gin.Context) {
 func handleCoverPhoto(c *gin.Context, eventId string) {
     file, err := c.FormFile("cover_photo")
 
-    if err == nil {
-        relativePath := GetEventImageDir(&eventId) + "/cover_" + file.Filename
-        path, err := filepath.Abs(relativePath)
-        if err == nil {
-            c.SaveUploadedFile(file, path)
-        }
-
-        DB.Query("UPDATE $event SET cover_photo=$path", map[string]string{
-            "path": relativePath,
-        })
+    if err != nil {
+        return
     }
+
+    relativePath := GetEventImageDir(&eventId) + "/cover_" + file.Filename
+    path, err := filepath.Abs(relativePath)
+    if err == nil {
+        c.SaveUploadedFile(file, path)
+    }
+
+    DB.Query("UPDATE $event SET cover_photo=$path", map[string]string{
+        "path": relativePath,
+    })
 }

@@ -11,17 +11,20 @@ import (
 	"github.com/surrealdb/surrealdb.go"
 )
 
-func RegisterImageRoutes() {
+func RegisterImageRoutes(router *gin.Engine) {
+    router.GET("events/:eventId/images", GetImages)
+    router.POST("events/:eventId/images", GetImages)
     ApiRouter.GET("events/:eventId/images", GetImages)
     ApiRouter.POST("events/:eventId/images", UploadImages)
     ApiRouter.DELETE("events/:eventId/images/:imageId", DeleteImage)
 }
 
 type ImageFilter struct {
+    EventId string `json:"event_id" form:"event_id"`
     PageNo int `json:"page,default=1" form:"page,default=1"`
     Limit int `json:"limit,default=25" form:"limit,default=25"`
     Start int `json:"start,default=0" form:"start,default=0"`
-    EventId string `json:"event_id" form:"event_id"`
+    Encode []float32 `json:"encoding" form:"encoding"`
 }
 
 type Image struct {
@@ -40,14 +43,14 @@ func GetImages(c *gin.Context) {
         return
     }
 
-    c.ShouldBind(&filter)
-
     filter.Start = (filter.PageNo - 1) * filter.Limit
     filter.EventId = c.Param("eventId")
 
-    sql := `SELECT * from image where event = $event_id LIMIT $limit START $start`
+    sql := `SELECT * from image where event = $event_id order by created desc LIMIT $limit START $start`
+    if filter.Encode != nil {
+        sql = `select * from image where event=$event_id and ->(face_of where vector::similarity::cosine($encoding, out.encoding) > 0.6) order by created desc LIMIT $limit START $start`
+    }
     data, err := DB.Query(sql, &filter)
-    fmt.Println(filter)
 
     if err != nil {
         c.JSON(412, gin.H{"message": "Unable to parse request", "exception": err.Error()})
@@ -62,7 +65,10 @@ func GetImages(c *gin.Context) {
 
     results := make([]res, 1)
 
-    surrealdb.Unmarshal(data, &results)
+   if err = surrealdb.Unmarshal(data, &results); err != nil {
+        c.JSON(412, gin.H{"message": "Unable to parse request", "exception": err.Error()})
+        return
+   }
 
     c.JSON(200, gin.H{"images": results[0].Result})
 }
@@ -100,7 +106,23 @@ func UploadImages(c *gin.Context) {
         }
 
         if res, err := DB.Query(sql, &payload); err == nil {
-            fmt.Println(res)
+            type result struct {
+                Result []Image `json:"result"`
+                Status string `json:"status"`
+                Time string `json:"time"`
+            }
+
+            results := make([]result, 1)
+
+            surrealdb.Unmarshal(res, &results)
+            _, err = DB.Query("RELATE $event->event_of->$image", &map[string]string{
+                "image": results[0].Result[0].Id,
+                "event": eventId,
+            })
+
+            if err != nil {
+                fmt.Println(err)
+            }
             count++
         } else {
             c.JSON(http.StatusBadRequest, gin.H{"message": "Unable to creat image"})
