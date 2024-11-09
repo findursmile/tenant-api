@@ -13,8 +13,6 @@ RUN go mod download
 
 COPY . ./
 
- COPY *.go ./
-
 # Build
 RUN CGO_ENABLED=0 GOOS=linux go build -o /tenant-api
 

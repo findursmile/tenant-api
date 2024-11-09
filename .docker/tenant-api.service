@@ -1,0 +1,11 @@
+[Unit]
+Description=FindUrSmile tenant-api
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=10s
+ExecStart=/app/tenant-api
+
+[Install]
+WantedBy=multi-user.target
