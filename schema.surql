@@ -17,7 +17,7 @@ DEFINE FIELD updated ON tenant VALUE time::now() TYPE datetime;
 
 DEFINE INDEX email ON tenant FIELDS email UNIQUE;
 
-DEFINE SCOPE tenant SESSION 1d
+DEFINE ACCESS tenant ON DATABASE TYPE RECORD
 	SIGNIN (
 		SELECT * FROM tenant WHERE email = $email AND crypto::argon2::compare(password, $password)
 	)
@@ -30,7 +30,11 @@ DEFINE SCOPE tenant SESSION 1d
 			status: $status,
 			password: crypto::argon2::generate($password)
 		}
-	);
+	)
+    DURATION
+        FOR SESSION 1d,
+        FOR TOKEN 3h,
+;
 
 
 
