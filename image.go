@@ -24,7 +24,7 @@ type ImageFilter struct {
     PageNo int `json:"page,default=1" form:"page,default=1"`
     Limit int `json:"limit,default=25" form:"limit,default=25"`
     Start int `json:"start,default=0" form:"start,default=0"`
-    Encode []float32 `json:"encoding" form:"encoding"`
+    Encode []float64 `json:"encoding" form:"encoding"`
 }
 
 type Image struct {
