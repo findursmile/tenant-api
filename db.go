@@ -31,6 +31,10 @@ func InitDB() {
     }
 
     DB.Use(os.Getenv( "DB_NAMESPACE" ), os.Getenv( "DB_DATABASE" ))
+    DB.Signin(map[string]interface{}{
+        "user": os.Getenv("DB_USER"),
+        "pass": os.Getenv("DB_PASS"),
+    })
 }
 
 func ImportSchema() {
