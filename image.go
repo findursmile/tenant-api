@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/surrealdb/surrealdb.go"
 )
 
@@ -31,8 +31,8 @@ type Image struct {
     Id string `json:"id"`
     ImageUri string `json:"image_uri"`
     Event string `json:"event"`
-    Status string `json:"status"`
-    Created time.Time `json:"created"`
+    // Status string `json:"status"`
+    // Created time.Time `json:"created"`
 }
 
 func GetImages(c *gin.Context) {
@@ -63,14 +63,16 @@ func GetImages(c *gin.Context) {
         Time string `json:"time"`
     }
 
-    results := make([]res, 1)
+    // results := make([]res, 1)
+    results := make([]any, 1)
 
    if err = surrealdb.Unmarshal(data, &results); err != nil {
         c.JSON(412, gin.H{"message": "Unable to parse request", "exception": err.Error()})
         return
    }
 
-    c.JSON(200, gin.H{"images": results[0].Result})
+   c.JSON(200, results)
+    // c.JSON(200, gin.H{"images": results[0].Result})
 }
 
 func UploadImages(c *gin.Context) {
@@ -88,7 +90,8 @@ func UploadImages(c *gin.Context) {
     count := 0
 
     for _, image := range images {
-        uri := GetEventImageDir(&eventId) + "/" + image.Filename
+        filename := uuid.NewString()
+        uri := GetEventImageDir(&eventId) + "/" + filename + filepath.Ext(image.Filename)
         path, _ := filepath.Abs(uri)
 
         if err = c.SaveUploadedFile(image, path); err != nil {
