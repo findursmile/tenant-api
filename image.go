@@ -63,16 +63,14 @@ func GetImages(c *gin.Context) {
         Time string `json:"time"`
     }
 
-    // results := make([]res, 1)
-    results := make([]any, 1)
+    results := make([]res, 1)
 
    if err = surrealdb.Unmarshal(data, &results); err != nil {
         c.JSON(412, gin.H{"message": "Unable to parse request", "exception": err.Error()})
         return
    }
 
-   c.JSON(200, results)
-    // c.JSON(200, gin.H{"images": results[0].Result})
+   c.JSON(200, gin.H{"images": results[0].Result})
 }
 
 func UploadImages(c *gin.Context) {
