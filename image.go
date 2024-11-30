@@ -165,7 +165,7 @@ func DeleteImage(c *gin.Context) {
         return
     }
 
-    sql := `DELETE $image where event = $event`
+    sql := `DELETE $imageId`
 
     if _, err := DB.Query(sql, &payload); err != nil {
         c.JSON(http.StatusBadRequest, gin.H{"message": "Image not found"})
